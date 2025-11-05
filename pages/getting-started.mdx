@@ -1,0 +1,152 @@
+# Getting Started
+
+Get up and running with sessh in minutes.
+
+## Installation
+
+### Linux/macOS (Bash)
+
+1. Copy `sessh` to your PATH and make it executable:
+   ```bash
+   cp sessh/sessh /usr/local/bin/
+   chmod +x /usr/local/bin/sessh
+   ```
+
+### Windows (PowerShell)
+
+1. Copy `sessh.ps1` to a directory in your PATH:
+   ```powershell
+   # Option 1: Add to PowerShell profile directory
+   Copy-Item sessh.ps1 $PROFILE\..\sessh.ps1
+   
+   # Option 2: Create a scripts directory and add to PATH
+   New-Item -ItemType Directory -Path "$env:USERPROFILE\Scripts" -Force
+   Copy-Item sessh.ps1 "$env:USERPROFILE\Scripts\sessh.ps1"
+   ```
+
+2. Create an alias or function for easier invocation:
+   ```powershell
+   # Add to your PowerShell profile ($PROFILE)
+   function sessh {
+       & "$env:USERPROFILE\Scripts\sessh.ps1" $args
+   }
+   ```
+
+### Prerequisites
+
+- `ssh` (OpenSSH client)
+  - Linux/macOS: Usually pre-installed
+  - Windows: Built into Windows 10/11, or install via OpenSSH for Windows
+- `tmux` (on remote hosts only - not required locally)
+- `jq` (optional, for JSON parsing in bash)
+- `autossh` (optional, for auto-reconnection in bash)
+- PowerShell 5.1+ (for Windows PowerShell version)
+
+## Basic Usage
+
+### Linux/macOS (Bash)
+```bash
+# Open a persistent session
+sessh open agent ubuntu@203.0.113.10
+
+# Run a command in the session
+sessh run agent ubuntu@203.0.113.10 -- "conda activate foo && python train.py"
+
+# Get logs
+sessh logs agent ubuntu@203.0.113.10 400
+
+# Check status
+sessh status agent ubuntu@203.0.113.10
+
+# Attach interactively (Ctrl+B, D to detach)
+sessh attach agent ubuntu@203.0.113.10
+
+# Close session
+sessh close agent ubuntu@203.0.113.10
+```
+
+### Windows (PowerShell)
+```powershell
+# Open a persistent session
+sessh open agent ubuntu@203.0.113.10
+
+# Run a command in the session
+sessh run agent ubuntu@203.0.113.10 -- "conda activate foo && python train.py"
+
+# Get logs
+sessh logs agent ubuntu@203.0.113.10 400
+
+# Check status
+sessh status agent ubuntu@203.0.113.10
+
+# Attach interactively (Ctrl+B, D to detach)
+sessh attach agent ubuntu@203.0.113.10
+
+# Close session
+sessh close agent ubuntu@203.0.113.10
+```
+
+## Environment Variables
+
+### Linux/macOS (Bash)
+```bash
+export SESSH_JSON=1
+export SESSH_SSH=autossh
+export SESSH_IDENTITY=~/.ssh/id_ed25519
+export SESSH_PROXYJUMP=user@bastion
+export SESSH_PERSIST=8h
+export SESSH_KEEPALIVE=30
+```
+
+### Windows (PowerShell)
+```powershell
+$env:SESSH_JSON = "1"
+$env:SESSH_SSH = "autossh"
+$env:SESSH_IDENTITY = "$env:USERPROFILE\.ssh\id_ed25519"
+$env:SESSH_PROXYJUMP = "user@bastion"
+$env:SESSH_PERSIST = "8h"
+$env:SESSH_KEEPALIVE = "30"
+```
+
+### All Platforms
+
+- `SESSH_JSON=1` / `$env:SESSH_JSON="1"` - Enable JSON output mode
+- `SESSH_SSH=autossh` / `$env:SESSH_SSH="autossh"` - Use autossh for auto-reconnection (bash only)
+- `SESSH_IDENTITY=~/.ssh/id_ed25519` / `$env:SESSH_IDENTITY="..."` - Specify SSH private key
+- `SESSH_PROXYJUMP=user@bastion` / `$env:SESSH_PROXYJUMP="..."` - Use ProxyJump
+- `SESSH_PERSIST=8h` / `$env:SESSH_PERSIST="8h"` - ControlMaster persistence duration
+- `SESSH_KEEPALIVE=30` / `$env:SESSH_KEEPALIVE="30"` - Server alive interval (seconds)
+
+## Use Cases
+
+### Autonomous GPU Training
+
+Launch Lambda Labs/EC2 GPU instances, train models, terminate automatically:
+
+```bash
+# Launch instance → Get IP
+sessh open agent "ubuntu@$ip"
+sessh run agent "ubuntu@$ip" -- "pip install torch && python train.py"
+sessh logs agent "ubuntu@$ip" 400
+# Terminate instance
+```
+
+### CI/CD
+
+Long-running build/test jobs on remote infrastructure:
+
+```bash
+sessh open builder "build@ci-host"
+sessh run builder "build@ci-host" -- "make build && make test"
+sessh logs builder "build@ci-host" 1000
+```
+
+### Development
+
+Persistent remote development environments:
+
+```bash
+sessh open dev "user@dev-server"
+sessh attach dev "user@dev-server"  # Ctrl+B, D to detach
+```
+

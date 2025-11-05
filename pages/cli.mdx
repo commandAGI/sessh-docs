@@ -1,0 +1,312 @@
+# CLI Reference
+
+Complete reference for the `sessh` command-line interface.
+
+## Installation
+
+### Linux/macOS (Bash)
+
+1. Copy `sessh` to your PATH and make it executable:
+   ```bash
+   cp sessh/sessh /usr/local/bin/
+   chmod +x /usr/local/bin/sessh
+   ```
+
+### Windows (PowerShell)
+
+1. Copy `sessh.ps1` to a directory in your PATH:
+   ```powershell
+   # Option 1: Add to PowerShell profile directory
+   Copy-Item sessh.ps1 $PROFILE\..\sessh.ps1
+   
+   # Option 2: Create a scripts directory and add to PATH
+   New-Item -ItemType Directory -Path "$env:USERPROFILE\Scripts" -Force
+   Copy-Item sessh.ps1 "$env:USERPROFILE\Scripts\sessh.ps1"
+   ```
+
+2. Create an alias or function for easier invocation:
+   ```powershell
+   # Add to your PowerShell profile ($PROFILE)
+   function sessh {
+       & "$env:USERPROFILE\Scripts\sessh.ps1" $args
+   }
+   ```
+
+## Commands
+
+### `open`
+
+Open or ensure a persistent remote tmux session via SSH controlmaster.
+
+**Usage:**
+```bash
+sessh open <alias> <host> [port]
+```
+
+**Parameters:**
+- `alias` (string): Session alias name
+- `host` (string): SSH host (user@host)
+- `port` (number, optional): SSH port (default: 22)
+
+**Example:**
+```bash
+sessh open agent ubuntu@203.0.113.10
+```
+
+### `run`
+
+Send a command into the persistent tmux session on the remote host.
+
+**Usage:**
+```bash
+sessh run <alias> <host> -- <command>
+```
+
+**Parameters:**
+- `alias` (string): Session alias name
+- `host` (string): SSH host (user@host)
+- `command` (string): Command to execute
+
+**Example:**
+```bash
+sessh run agent ubuntu@203.0.113.10 -- "conda activate env && python train.py"
+```
+
+### `logs`
+
+Capture recent output from the tmux session.
+
+**Usage:**
+```bash
+sessh logs <alias> <host> [lines]
+```
+
+**Parameters:**
+- `alias` (string): Session alias name
+- `host` (string): SSH host (user@host)
+- `lines` (number, optional): Number of lines to capture (default: 300)
+
+**Example:**
+```bash
+sessh logs agent ubuntu@203.0.113.10 400
+```
+
+### `status`
+
+Check whether the SSH controlmaster and tmux session exist.
+
+**Usage:**
+```bash
+sessh status <alias> <host> [port]
+```
+
+**Parameters:**
+- `alias` (string): Session alias name
+- `host` (string): SSH host (user@host)
+- `port` (number, optional): SSH port (default: 22)
+
+**Example:**
+```bash
+sessh status agent ubuntu@203.0.113.10
+```
+
+**Output:**
+```json
+{
+  "ok": true,
+  "op": "status",
+  "master": 1,
+  "session": 1
+}
+```
+
+### `close`
+
+Kill tmux session and close the controlmaster.
+
+**Usage:**
+```bash
+sessh close <alias> <host> [port]
+```
+
+**Parameters:**
+- `alias` (string): Session alias name
+- `host` (string): SSH host (user@host)
+- `port` (number, optional): SSH port (default: 22)
+
+**Example:**
+```bash
+sessh close agent ubuntu@203.0.113.10
+```
+
+### `attach`
+
+Attach interactively to the tmux session. Use Ctrl+B, D to detach.
+
+**Usage:**
+```bash
+sessh attach <alias> <host>
+```
+
+**Parameters:**
+- `alias` (string): Session alias name
+- `host` (string): SSH host (user@host)
+
+**Example:**
+```bash
+sessh attach agent ubuntu@203.0.113.10
+```
+
+### `keys`
+
+Send individual key events to the tmux session (no Enter key). Useful for interactive TUI programs like vim or nano.
+
+**Usage:**
+```bash
+sessh keys <alias> <host> -- <keys>
+```
+
+**Parameters:**
+- `alias` (string): Session alias name
+- `host` (string): SSH host (user@host)
+- `keys` (string): Key sequence to send (e.g., 'j', 'k', 'C-x', 'Esc', etc.)
+
+**Example:**
+```bash
+sessh keys editor ubuntu@host -- "i"
+sessh keys editor ubuntu@host -- "Hello"
+sessh keys editor ubuntu@host -- "Esc"
+```
+
+### `pane`
+
+Read the current pane state from the tmux session. Useful for reading the current state of interactive TUI programs.
+
+**Usage:**
+```bash
+sessh pane <alias> <host> [lines]
+```
+
+**Parameters:**
+- `alias` (string): Session alias name
+- `host` (string): SSH host (user@host)
+- `lines` (number, optional): Number of lines to capture (default: 300)
+
+**Example:**
+```bash
+sessh pane editor ubuntu@host 50
+```
+
+## Environment Variables
+
+### Linux/macOS (Bash)
+```bash
+export SESSH_JSON=1
+export SESSH_SSH=autossh
+export SESSH_IDENTITY=~/.ssh/id_ed25519
+export SESSH_PROXYJUMP=user@bastion
+export SESSH_PERSIST=8h
+export SESSH_KEEPALIVE=30
+```
+
+### Windows (PowerShell)
+```powershell
+$env:SESSH_JSON = "1"
+$env:SESSH_SSH = "autossh"
+$env:SESSH_IDENTITY = "$env:USERPROFILE\.ssh\id_ed25519"
+$env:SESSH_PROXYJUMP = "user@bastion"
+$env:SESSH_PERSIST = "8h"
+$env:SESSH_KEEPALIVE = "30"
+```
+
+### All Platforms
+
+- `SESSH_JSON=1` / `$env:SESSH_JSON="1"` - Enable JSON output mode
+- `SESSH_SSH=autossh` / `$env:SESSH_SSH="autossh"` - Use autossh for auto-reconnection (bash only)
+- `SESSH_IDENTITY=~/.ssh/id_ed25519` / `$env:SESSH_IDENTITY="..."` - Specify SSH private key
+- `SESSH_PROXYJUMP=user@bastion` / `$env:SESSH_PROXYJUMP="..."` - Use ProxyJump
+- `SESSH_PERSIST=8h` / `$env:SESSH_PERSIST="8h"` - ControlMaster persistence duration
+- `SESSH_KEEPALIVE=30` / `$env:SESSH_KEEPALIVE="30"` - Server alive interval (seconds)
+
+## JSON Mode for Automation
+
+Enable JSON output for programmatic parsing:
+
+```bash
+# Enable JSON output
+export SESSH_JSON=1
+
+# Parse responses
+response=$(sessh open agent ubuntu@host)
+alias=$(echo "$response" | jq -r '.alias')
+status=$(sessh status agent ubuntu@host)
+master=$(echo "$status" | jq -r '.master')
+session=$(echo "$status" | jq -r '.session')
+```
+
+## Interactive TUI Programs
+
+Use `keys` and `pane` to interact with TUI programs like vim, nano, or htop:
+
+```bash
+# Open session and launch vim
+sessh open editor ubuntu@host
+sessh run editor ubuntu@host -- "vim file.txt"
+
+# Read the current pane to see vim's state
+sessh pane editor ubuntu@host 30
+
+# Send key sequences to navigate and edit
+sessh keys editor ubuntu@host -- "i"          # Enter insert mode
+sessh keys editor ubuntu@host -- "Hello"      # Type text
+sessh keys editor ubuntu@host -- "Esc"       # Exit insert mode
+sessh keys editor ubuntu@host -- ":wq"        # Save and quit
+sessh keys editor ubuntu@host -- "Enter"     # Confirm
+
+# Read pane again to verify
+sessh pane editor ubuntu@host 30
+```
+
+## How It Works
+
+Sessh combines two proven technologies:
+
+### 1. SSH ControlMaster/ControlPersist
+
+When you run `sessh open agent ubuntu@host`:
+- Opens a persistent **master connection** to the remote host
+- This connection stays alive for 8 hours (configurable)
+- All subsequent commands **reuse** this connection (instant, no handshake)
+- Control socket stored in ramfs (`/run/user/$UID` on Linux, `$LOCALAPPDATA/sessh` on Windows) when available for speed
+
+### 2. Remote Tmux Session
+
+On the remote host:
+- Creates a **detached tmux session** named after your alias
+- This session runs a real interactive shell
+- Maintains state: current directory, environment variables, active processes
+- Persists even when you disconnect
+
+### Command Flow
+
+When you run `sessh run agent ubuntu@host -- "command"`:
+
+1. **Reuses master connection** (instant, no SSH handshake)
+2. **Sends command via tmux**: `tmux send-keys -t agent "command" C-m`
+3. **Returns immediately** (command runs in background tmux session)
+4. **State persists**: Next command sees same cwd, same environment
+
+When you run `sessh logs agent ubuntu@host`:
+
+1. **Reuses master connection** (instant)
+2. **Captures output**: `tmux capture-pane -pt agent -S -300`
+3. **Returns output** (last 300 lines by default)
+
+## Security
+
+- Strict host key checking (default: `accept-new`)
+- Key-only authentication (no passwords)
+- Modern cipher suites and KEX algorithms
+- Identity key isolation
+- Control socket permissions
+

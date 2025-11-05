@@ -1,0 +1,267 @@
+# Troubleshooting
+
+Common issues and solutions when using sessh.
+
+## Installation Issues
+
+### "tmux: command not found"
+
+**Problem**: Remote host doesn't have tmux installed.
+
+**Solution**: Install tmux on the remote host:
+```bash
+# Ubuntu/Debian
+sudo apt-get install tmux
+
+# CentOS/RHEL
+sudo yum install tmux
+
+# macOS
+brew install tmux
+```
+
+Or install it in a one-time SSH session before using sessh:
+```bash
+ssh ubuntu@host "sudo apt-get install -y tmux"
+```
+
+## Connection Issues
+
+### "ControlMaster connection failed"
+
+**Problem**: SSH connection cannot be established or maintained.
+
+**Solutions**:
+
+1. **Check SSH key permissions**:
+   ```bash
+   chmod 600 ~/.ssh/id_ed25519
+   ```
+
+2. **Verify network connectivity**:
+   ```bash
+   ssh -v ubuntu@host
+   ```
+   Check for connection issues in the verbose output.
+
+3. **Check firewall rules**: SSH port 22 must be open on the remote host.
+
+4. **Ensure SSH server supports ControlMaster**: Modern OpenSSH versions support this. Check with:
+   ```bash
+   ssh -V
+   ```
+
+### "Permission denied (publickey)"
+
+**Problem**: SSH authentication is failing.
+
+**Solutions**:
+
+1. **Ensure your public key is in `~/.ssh/authorized_keys` on remote host**:
+   ```bash
+   ssh-copy-id ubuntu@host
+   ```
+
+2. **Check SSH key path**:
+   ```bash
+   SESSH_IDENTITY=~/.ssh/id_ed25519 sessh open ...
+   ```
+
+3. **Verify key permissions**:
+   ```bash
+   chmod 600 ~/.ssh/id_ed25519
+   chmod 644 ~/.ssh/id_ed25519.pub
+   ```
+
+### "autossh not found"
+
+**Problem**: autossh is not installed but you're trying to use it.
+
+**Solutions**:
+
+1. **Install autossh**:
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get install autossh
+   
+   # macOS
+   brew install autossh
+   ```
+
+2. **Or use standard SSH** (no auto-reconnection):
+   ```bash
+   export SESSH_SSH=ssh
+   # or
+   unset SESSH_SSH
+   ```
+
+## State Persistence Issues
+
+### Commands not persisting state
+
+**Problem**: Commands don't seem to maintain state between calls.
+
+**Solutions**:
+
+1. **Verify tmux session exists**:
+   ```bash
+   sessh status alias host
+   ```
+   Should show `"session": 1` if the session exists.
+
+2. **Check if commands are running**:
+   ```bash
+   sessh logs alias host 50
+   ```
+
+3. **Ensure you're using the same alias and host for all commands**:
+   ```bash
+   # Correct: same alias and host
+   sessh open agent ubuntu@host
+   sessh run agent ubuntu@host -- "cd /tmp"
+   sessh run agent ubuntu@host -- "pwd"  # Should show /tmp
+   
+   # Wrong: different alias
+   sessh open agent ubuntu@host
+   sessh run different-alias ubuntu@host -- "cd /tmp"
+   sessh run agent ubuntu@host -- "pwd"  # Won't show /tmp
+   ```
+
+## Control Socket Issues
+
+### Control socket errors
+
+**Problem**: Issues with control socket creation or access.
+
+**Solutions**:
+
+1. **Linux/macOS**: Check socket directory permissions:
+   ```bash
+   ls -la /run/user/$UID/
+   ```
+
+2. **Windows**: Check socket directory:
+   ```powershell
+   Get-ChildItem "$env:LOCALAPPDATA\sessh"
+   ```
+
+3. **Set custom directory**:
+   ```bash
+   # Linux/macOS
+   SESSH_CTRL_DIR=/tmp sessh open ...
+   
+   # Windows
+   $env:SESSH_CTRL_DIR="C:\temp"; sessh open ...
+   ```
+
+4. **Clean up old sockets**:
+   ```bash
+   # Linux/macOS
+   rm -f /run/user/$UID/sessh_*
+   
+   # Windows
+   Remove-Item "$env:LOCALAPPDATA\sessh\sessh_*" -ErrorAction SilentlyContinue
+   ```
+
+## JSON Mode Issues
+
+### JSON parsing errors
+
+**Problem**: JSON output is not being parsed correctly.
+
+**Solutions**:
+
+1. **Ensure `SESSH_JSON=1` is set**:
+   ```bash
+   export SESSH_JSON=1
+   # or
+   SESSH_JSON=1 sessh open test ubuntu@host
+   ```
+
+2. **Check that `jq` or Python 3 is available for JSON parsing**:
+   ```bash
+   # Check jq
+   which jq
+   
+   # Check Python 3
+   python3 --version
+   ```
+
+3. **Verify sessh output is actually JSON**:
+   ```bash
+   SESSH_JSON=1 sessh open test ubuntu@host
+   ```
+   Should output JSON, not plain text.
+
+## Platform-Specific Issues
+
+### Windows PowerShell Issues
+
+**Problem**: PowerShell-specific errors.
+
+**Solutions**:
+
+1. **Ensure PowerShell 5.1+ is installed**:
+   ```powershell
+   $PSVersionTable.PSVersion
+   ```
+
+2. **Check that OpenSSH is available**:
+   ```powershell
+   ssh -V
+   ```
+   If not installed, install OpenSSH for Windows.
+
+3. **Verify path separators**: The script handles Windows paths automatically, but if you're setting custom paths, use forward slashes for SSH ControlPath.
+
+### macOS Issues
+
+**Problem**: Issues specific to macOS.
+
+**Solutions**:
+
+1. **Ensure Homebrew SSH/tmux are installed** (if using Homebrew versions):
+   ```bash
+   brew install openssh tmux
+   ```
+
+2. **Check PATH**: Ensure the correct SSH/tmux binaries are in your PATH.
+
+## Performance Issues
+
+### Commands are slow
+
+**Problem**: Commands take a long time to execute.
+
+**Solutions**:
+
+1. **Check if ControlMaster is being reused**:
+   ```bash
+   sessh status alias host
+   ```
+   Should show `"master": 1` if the master connection exists.
+
+2. **Use ramfs for control sockets** (Linux):
+   - Control sockets are automatically stored in `/run/user/$UID/` when available (ramfs)
+   - This is faster than disk-backed storage
+
+3. **Check network latency**:
+   ```bash
+   ping host
+   ```
+
+4. **Reduce log capture size** if you're capturing large amounts of output:
+   ```bash
+   sessh logs alias host 100  # Instead of 400
+   ```
+
+## Getting Help
+
+If you're still experiencing issues:
+
+1. **Check the logs**: Enable verbose output and check for error messages
+2. **Verify prerequisites**: Ensure all required tools (ssh, tmux) are installed
+3. **Test basic SSH connectivity**: Try connecting directly with `ssh` first
+4. **Check the [Architecture](/architecture) page**: Understanding how sessh works can help diagnose issues
+5. **Open an issue**: If the problem persists, open an issue on the [GitHub repository](https://github.com/CommandAGI/sessh)
+

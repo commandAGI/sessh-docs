@@ -1,0 +1,18 @@
+{
+  "introduction": "Introduction",
+  "getting-started": "Getting Started",
+  "cli": "CLI Reference",
+  "architecture": "Architecture",
+  "sdk": {
+    "title": "SDKs",
+    "type": "page",
+    "pages": {
+      "python": "Python SDK",
+      "typescript": "TypeScript SDK",
+      "mcp": "MCP Server"
+    }
+  },
+  "examples": "Examples",
+  "troubleshooting": "Troubleshooting"
+}
+
