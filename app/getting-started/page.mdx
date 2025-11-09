@@ -1,3 +1,8 @@
+---
+title: Getting Started
+description: Learn how to install and use sessh.
+---
+
 # Getting Started
 
 Get up and running with sessh in minutes.
@@ -117,36 +122,9 @@ $env:SESSH_KEEPALIVE = "30"
 - `SESSH_PERSIST=8h` / `$env:SESSH_PERSIST="8h"` - ControlMaster persistence duration
 - `SESSH_KEEPALIVE=30` / `$env:SESSH_KEEPALIVE="30"` - Server alive interval (seconds)
 
-## Use Cases
+## Next Steps
 
-### Autonomous GPU Training
-
-Launch Lambda Labs/EC2 GPU instances, train models, terminate automatically:
-
-```bash
-# Launch instance → Get IP
-sessh open agent "ubuntu@$ip"
-sessh run agent "ubuntu@$ip" -- "pip install torch && python train.py"
-sessh logs agent "ubuntu@$ip" 400
-# Terminate instance
-```
-
-### CI/CD
-
-Long-running build/test jobs on remote infrastructure:
-
-```bash
-sessh open builder "build@ci-host"
-sessh run builder "build@ci-host" -- "make build && make test"
-sessh logs builder "build@ci-host" 1000
-```
-
-### Development
-
-Persistent remote development environments:
-
-```bash
-sessh open dev "user@dev-server"
-sessh attach dev "user@dev-server"  # Ctrl+B, D to detach
-```
-
+- Explore [Use Cases](/use-cases) for common workflows
+- Read the [CLI Reference](/cli) for complete command documentation
+- Check out [Examples](/examples) for real-world usage
+- Learn about the [Architecture](/architecture) behind sessh

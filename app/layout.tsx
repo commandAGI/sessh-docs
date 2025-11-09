@@ -1,4 +1,4 @@
-import { Footer, Layout, Navbar } from 'nextra-theme-docs'
+import { Layout } from 'nextra-theme-docs'
 import { Head } from 'nextra/components'
 import { getPageMap } from 'nextra/page-map'
 import 'nextra-theme-docs/style.css'
@@ -8,14 +8,6 @@ export const metadata: Metadata = {
   title: "Sessh Documentation",
   description: "Documentation for Sessh - SSH Session Manager",
 };
-
-const navbar = (
-  <Navbar
-    logo={<span>Sessh Documentation</span>}
-  />
-);
-
-const footer = <Footer>Sessh Documentation © 2025</Footer>;
 
 export default async function RootLayout({
   children,
@@ -33,10 +25,7 @@ export default async function RootLayout({
       </Head>
       <body>
         <Layout
-          navbar={navbar}
           pageMap={await getPageMap()}
-          docsRepositoryBase="https://github.com/CommandAGI/sessh-docs"
-          footer={footer}
         >
           {children}
         </Layout>

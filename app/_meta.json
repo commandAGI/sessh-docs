@@ -1,8 +1,14 @@
 {
+  "*": {
+    "theme": {
+      "footer": false
+    }
+  },
   "introduction": "Introduction",
   "getting-started": "Getting Started",
-  "cli": "CLI Reference",
+  "cli": "Command-line Interface",
   "architecture": "Architecture",
+  "use-cases": "Use Cases",
   "sdk": {
     "title": "SDKs",
     "type": "page",
@@ -15,4 +21,3 @@
   "examples": "Examples",
   "troubleshooting": "Troubleshooting"
 }
-

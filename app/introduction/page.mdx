@@ -1,99 +1,33 @@
-# Sessh Ecosystem
+---
+title: What is Sessh
+description: Sessh is a persistent SSH session manager that enables one-shot CLI commands to operate long-lived interactive shells on remote hosts.
+---
 
-A collection of tools for enabling AI agents to manage persistent SSH sessions on remote hosts. Perfect for autonomous workflows like launching GPU instances, training models, and terminating infrastructure—all without human intervention.
+# Sessh
 
-## Philosophy
+Sessh is a persistent SSH session manager that enables one-shot CLI commands to operate long-lived interactive shells on remote hosts. Perfect for AI agents like Cursor that can only run single commands.
 
-Sessh exists to solve one specific problem: **AI agents like Cursor can only run single commands that terminate immediately, but they need to operate persistent interactive shells on remote hosts**.
+## The Problem
 
-### Core Principles
+AI coding assistants like Cursor can only run **single commands** that terminate immediately. But many workflows require **persistent interactive shells** that maintain state (current directory, environment variables, active processes) between commands.
 
-1. **Fail Loudly, Not Gracefully**: No fallbacks or backwards compatibility. If something breaks, it breaks clearly.
-2. **Single-Command Interface**: Every operation terminates immediately. The persistent shell lives on in tmux on the remote.
-3. **Real Implementations**: We use real POSIX tools (SSH ControlMaster, tmux) rather than abstractions.
-4. **Autonomous by Default**: Enable fully automated workflows. Launch → SSH → Train → Terminate.
-5. **Security First**: Hardened SSH defaults, key-only auth, modern cipher suites.
+Traditional SSH tools either:
+- Require interactive sessions (not usable by AI agents)
+- Run commands in isolation (no state persistence)
+- Use complex connection management (hard to automate)
 
-## Projects
+## The Solution
 
-### [sessh](/cli) - Core CLI
+Sessh combines **SSH ControlMaster** (persistent connections) with **remote tmux** (persistent interactive shells) to give you:
 
-The bash script that does the heavy lifting. Combines SSH ControlMaster/ControlPersist with remote tmux to create persistent interactive shells.
+- **Single-command interface**: Every command terminates immediately
+- **Persistent state**: The remote shell maintains state between commands
+- **AI agent friendly**: Perfect for Cursor and other MCP clients
+- **Autonomous workflows**: Launch infrastructure → SSH → train models → terminate, all automatically
 
-**Key Features**:
-- Persistent SSH connections (ControlMaster)
-- Remote tmux sessions (stateful shells)
-- JSON output mode for automation
-- Autossh support for auto-reconnection
-- Hardened SSH defaults
+## How It Works
 
-### [sessh-mcp](/sdk/mcp) - MCP Server for Cursor
-
-Model Context Protocol server that exposes sessh functionality to Cursor and other MCP clients.
-
-**Key Features**:
-- MCP stdio transport
-- All sessh commands as MCP tools
-- TypeScript with full type safety
-- Zero dependencies (uses Node.js built-ins)
-
-### [sessh-python-sdk](/sdk/python) - Python SDK
-
-Pure stdlib Python client for managing persistent SSH sessions. No external dependencies.
-
-**Key Features**:
-- Pure Python stdlib (no dependencies)
-- Type hints for better IDE support
-- Simple API: `client.open()`, `client.run()`, `client.logs()`
-
-### [sessh-typescript-sdk](/sdk/typescript) - TypeScript SDK
-
-Promise-based TypeScript client for managing persistent SSH sessions from Node.js or browsers.
-
-**Key Features**:
-- Zero dependencies (Node.js built-ins only)
-- Promise-based async API
-- Full TypeScript type definitions
-
-## Quick Start
-
-### For AI Agents (Cursor)
-
-1. **Install sessh CLI**: See [Installation](/cli#installation)
-2. **Install and configure sessh-mcp**: See [MCP Server Setup](/sdk/mcp#cursor-configuration)
-3. **Use in Cursor**: Open session, run commands, check logs
-
-### For Python Scripts
-
-```bash
-pip install -e sessh-python-sdk/
-```
-
-```python
-from sessh import SesshClient
-
-client = SesshClient(alias="agent", host="ubuntu@host")
-client.open()
-client.run("your-command")
-```
-
-### For TypeScript/Node.js
-
-```bash
-cd sessh-typescript-sdk && npm install && npm run build
-```
-
-```typescript
-import { SesshClient } from "sessh-sdk";
-
-const client = new SesshClient({ alias: "agent", host: "ubuntu@host" });
-await client.open();
-await client.run("your-command");
-```
-
-## Architecture
-
-Sessh combines two technologies:
+Sessh combines two proven technologies:
 
 1. **SSH ControlMaster/ControlPersist**: Persistent TCP connections (reused across commands)
 2. **Remote tmux**: Persistent interactive shells (maintains state between commands)
@@ -108,5 +42,32 @@ Remote Host
 Your Commands
 ```
 
-See [Architecture](/architecture) for detailed design documentation.
+When you run `sessh open agent ubuntu@host`:
+- Opens a persistent **master connection** to the remote host
+- This connection stays alive for 8 hours (configurable)
+- Creates a **detached tmux session** on the remote host
+- All subsequent commands **reuse** this connection (instant, no handshake)
 
+When you run `sessh run agent ubuntu@host -- "command"`:
+1. **Reuses master connection** (instant, no SSH handshake)
+2. **Sends command via tmux**: `tmux send-keys -t agent "command" C-m`
+3. **Returns immediately** (command runs in background tmux session)
+4. **State persists**: Next command sees same cwd, same environment
+
+## Features
+
+- **Persistent Sessions**: SSH ControlMaster/ControlPersist multiplexing with tmux on remote hosts
+- **Autossh Support**: Automatic reconnection with keepalives
+- **Ramfs Control Sockets**: Fast socket communication when available
+- **Hardened SSH Options**: Modern KEX, ciphers, and MACs
+- **JSON Output Mode**: Machine-friendly responses for automation
+- **ProxyJump Support**: Jump through bastion hosts
+- **Cross-Platform**: Works on Linux, macOS, and Windows
+
+## Get Started
+
+Ready to start using sessh? Head over to [Getting Started](/getting-started) to install and run your first command.
+
+- [Installation](/getting-started#installation)
+- [Quick Start](/getting-started#basic-usage)
+- [CLI Reference](/cli)

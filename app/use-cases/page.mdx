@@ -1,0 +1,97 @@
+---
+title: Use Cases
+description: Common use cases and workflows for sessh.
+---
+
+# Use Cases
+
+Sessh enables a wide range of workflows that require persistent SSH sessions. Here are the most common use cases.
+
+## AI Agents (Primary Use Case)
+
+Enable Cursor and other AI agents to fully manage remote infrastructure:
+
+```bash
+# Launch a Lambda Labs GPU instance
+iid=$(curl -su "$LAMBDA_API_KEY:" ...)
+ip=$(curl -su "$LAMBDA_API_KEY:" ...)
+
+# Open session and train model
+sessh open agent "ubuntu@$ip"
+sessh run agent "ubuntu@$ip" -- "conda activate env && python train.py"
+sessh logs agent "ubuntu@$ip" 400
+
+# Terminate when done
+curl -su "$LAMBDA_API_KEY:" ... --data '{"instance_ids": ["'$iid'"]}'
+```
+
+## Autonomous Workflows
+
+Fully automated infrastructure management:
+
+```bash
+# Bootstrap EC2 instance
+aws ec2 run-instances ... > /tmp/i.json
+iid=$(jq -r '.Instances[0].InstanceId' /tmp/i.json)
+aws ec2 wait instance-status-ok --instance-ids "$iid"
+ip=$(aws ec2 describe-instances ... --query '...' --output text)
+
+# Provision and train
+sessh open agent "ubuntu@$ip"
+sessh run agent "ubuntu@$ip" -- "sudo apt-get update && sudo apt-get install -y python3-pip"
+sessh run agent "ubuntu@$ip" -- "pip install torch && python train.py"
+sessh logs agent "ubuntu@$ip"
+sessh close agent "ubuntu@$ip"
+
+# Terminate
+aws ec2 terminate-instances --instance-ids "$iid"
+```
+
+## CI/CD
+
+Long-running jobs on remote infrastructure:
+
+```bash
+# Build and test on remote
+sessh open builder "build@ci-host"
+sessh run builder "build@ci-host" -- "cd /repo && make build"
+sessh run builder "build@ci-host" -- "make test"
+sessh logs builder "build@ci-host" 1000
+```
+
+## Development
+
+Persistent remote development environments:
+
+```bash
+# Open session, work, detach, reattach later
+sessh open dev "user@dev-server"
+sessh attach dev "user@dev-server"  # Ctrl+B, D to detach
+# ... later ...
+sessh attach dev "user@dev-server"  # Resume where you left off
+```
+
+## Interactive TUI Programs
+
+Use `keys` and `pane` to interact with TUI programs like vim, nano, or htop:
+
+```bash
+# Open session and launch vim
+sessh open editor ubuntu@host
+sessh run editor ubuntu@host -- "vim file.txt"
+
+# Read the current pane to see vim's state
+sessh pane editor ubuntu@host 30
+
+# Send key sequences to navigate and edit
+sessh keys editor ubuntu@host -- "i"          # Enter insert mode
+sessh keys editor ubuntu@host -- "Hello"      # Type text
+sessh keys editor ubuntu@host -- "Esc"       # Exit insert mode
+sessh keys editor ubuntu@host -- ":wq"        # Save and quit
+sessh keys editor ubuntu@host -- "Enter"     # Confirm
+
+# Read pane again to verify
+sessh pane editor ubuntu@host 30
+```
+
+
